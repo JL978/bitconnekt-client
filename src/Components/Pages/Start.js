@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Switch, Route, useRouteMatch, useHistory } from "react-router-dom";
+import {
+	Switch,
+	Route,
+	useRouteMatch,
+	useHistory,
+	Redirect,
+} from "react-router-dom";
 import io from "socket.io-client";
 const ENDPOINT = "http://localhost:4000";
 
@@ -12,42 +18,56 @@ export default function Start() {
 	const [name, setName] = useState("");
 	const [room, setRoom] = useState("");
 	const [toast, setToast] = useState("");
-
+	const [redirect, setRedirect] = useState(false);
 	const timer = useRef();
 
 	useEffect(() => {
-		socket.on("newRoomCreated", ({ room_id }) => {
-			console.log(`joined ${room_id}`);
+		socket.on("redirect", ({ name, room_id }) => {
+			setRoom(room_id);
+			setName(name);
+			setRedirect(true);
 		});
+		socket.on("errorMessage", (error) => {
+			console.log(error);
+		});
+
+		return () => {
+			socket.disconnect();
+		};
 	}, []);
 
 	const onMakeRoom = () => {
 		if (name === "") {
 			setToast("Please name yourself");
+		} else {
+			socket.emit("newRoom", { name });
 		}
-
-		socket.emit("newRoom", { name });
 	};
 
 	const onJoinRoom = () => {
 		console.log("join room");
 		if (name === "" || room === "") {
 			setToast("Please name yourself and provide a room number");
+		} else {
+			socket.emit("joinRequest", { name, room_id: room });
 		}
 	};
 
 	return (
 		<>
+			{redirect && <Redirect to={`/game?room_id=${room}&name=${name}`} />}
 			<div className="Choice">
-				<button onClick={() => history.push(`/create`)}>Create new room</button>
-				<button onClick={() => history.push(`/join`)}>Join room</button>
+				<button onClick={() => history.push(`${path}/create`)}>
+					Create new room
+				</button>
+				<button onClick={() => history.push(`${path}/join`)}>Join room</button>
 			</div>
 			<div className="form">
 				<Switch>
 					<Route exact path={path}>
-						<h3>Please select a topic.</h3>
+						<h3>Pick your poison</h3>
 					</Route>
-					<Route path={`/create`}>
+					<Route path={`${path}/create`}>
 						<input
 							value={name}
 							onChange={(e) => setName(e.target.value)}
@@ -56,7 +76,7 @@ export default function Start() {
 						/>
 						<button onClick={() => onMakeRoom()}>Let's go</button>
 					</Route>
-					<Route path={`/join`}>
+					<Route path={`${path}/join`}>
 						<input
 							value={name}
 							onChange={(e) => setName(e.target.value)}
