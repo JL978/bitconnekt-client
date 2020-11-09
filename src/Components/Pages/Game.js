@@ -43,11 +43,6 @@ export default function Game() {
 				setIsWaiting(false);
 				const { card_up, is_over, turn, _players } = game;
 				setPlayers(_players);
-				const [currentPlayer] = _players.filter(
-					(player) => player.id === socketId
-				);
-				console.log(currentPlayer);
-				setSelf(currentPlayer);
 				setGame(game);
 			});
 
@@ -57,8 +52,15 @@ export default function Game() {
 	}, []);
 
 	useEffect(() => {
-		console.log(socketId);
-	}, [socketId]);
+		updateSelf();
+	}, [players]);
+
+	const updateSelf = () => {
+		console.log(players);
+		const [currentPlayer] = players.filter((player) => player._id === socketId);
+		console.log(currentPlayer);
+		setSelf(currentPlayer);
+	};
 
 	const onStart = () => {
 		socket.emit("start", { room_id });
@@ -88,11 +90,11 @@ export default function Game() {
 					<button onClick={() => onCopyText()}>Copy</button>
 				</div>
 			)}
-			{!isWaiting && game && (
+			{!isWaiting && game && self && (
 				<>
 					<div className="gameChoice">
-						<button>Take</button>
-						<button>Pass</button>
+						<button disabled={!self._turn}>Take</button>
+						<button disabled={!self._turn}>Pass</button>
 					</div>
 					<div className="currentCard">
 						<h2>Current Card</h2>
