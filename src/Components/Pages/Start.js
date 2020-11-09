@@ -19,11 +19,9 @@ export default function Start() {
 		socket.on("newRoomCreated", ({ room_id }) => {
 			console.log(`joined ${room_id}`);
 		});
-	});
+	}, []);
 
 	const onMakeRoom = () => {
-		console.log("make room");
-
 		if (name === "") {
 			setToast("Please name yourself");
 		}
