@@ -41,7 +41,13 @@ export default function Game() {
 
 			socket.on("startGame", (game) => {
 				setIsWaiting(false);
-				const { card_up, is_over, turn, _players } = game;
+				const { _players } = game;
+				setPlayers(_players);
+				setGame(game);
+			});
+
+			socket.on("gameUpdate", (game) => {
+				const { _players } = game;
 				setPlayers(_players);
 				setGame(game);
 			});
@@ -71,37 +77,64 @@ export default function Game() {
 		document.execCommand("copy");
 	};
 
+	const onMove = (move) => {
+		socket.emit("move", { room_id, move });
+	};
+
 	return (
 		<>
 			{!(name && room_id) && <Redirect to="/" />}
-			{isWaiting ? <h1>Waiting Lounge</h1> : <h1>Game</h1>}
-			{players.map(({ _name, cards }, index) => (
-				<div className="player" key={index}>
-					<div>{_name}</div>
-					<div>{cards}</div>
+			<div className="gameRoom">
+				{isWaiting ? (
+					<h1>Waiting for game to start...</h1>
+				) : (
+					<h1>BitConnekkkkt!</h1>
+				)}
+				{isMod && isWaiting && (
+					<button className="startButton" onClick={() => onStart()}>
+						Start game
+					</button>
+				)}
+				{isWaiting && <h2>Available players:</h2>}
+				<div className="players">
+					{players.map(({ _name, cards, _turn }, index) => (
+						<div className={`player`} key={index}>
+							<p className={_turn && "turn"}>{_name}</p>
+							<div className="cards">
+								{cards.map((card, index) => (
+									<div className="card" key={index}>
+										{card}
+									</div>
+								))}
+							</div>
+						</div>
+					))}
 				</div>
-			))}
-			{isMod && isWaiting && (
-				<button onClick={() => onStart()}>Start game</button>
-			)}
-			{isWaiting && (
-				<div>
-					<input readOnly ref={copyText} value={room_id} type="text" />
-					<button onClick={() => onCopyText()}>Copy</button>
-				</div>
-			)}
-			{!isWaiting && game && self && (
-				<>
-					<div className="gameChoice">
-						<button disabled={!self._turn}>Take</button>
-						<button disabled={!self._turn}>Pass</button>
+
+				{isWaiting && (
+					<div className="copyText">
+						<h4>Room ID</h4>
+						<input readOnly ref={copyText} value={room_id} type="text" />
+						<button onClick={() => onCopyText()}>Copy</button>
 					</div>
-					<div className="currentCard">
-						<h2>Current Card</h2>
-						<h3>{game.card_up}</h3>
-					</div>
-				</>
-			)}
+				)}
+				{!isWaiting && game && self && (
+					<>
+						<div className="currentCard">
+							<h2>Current Card</h2>
+							<div className="card">{game.card_up}</div>
+						</div>
+						<div className="gameChoice">
+							<button disabled={!self._turn} onClick={() => onMove("TAKE")}>
+								Take
+							</button>
+							<button disabled={!self._turn} onClick={() => onMove("PASS")}>
+								Pass
+							</button>
+						</div>
+					</>
+				)}
+			</div>
 		</>
 	);
 }
