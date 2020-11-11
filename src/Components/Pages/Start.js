@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
 	Switch,
 	Route,
@@ -19,7 +19,6 @@ export default function Start() {
 	const [room, setRoom] = useState("");
 	const [toast, setToast] = useState("");
 	const [redirect, setRedirect] = useState(false);
-	const timer = useRef();
 
 	useEffect(() => {
 		socket.on("redirect", ({ name, room_id }) => {
@@ -40,6 +39,7 @@ export default function Start() {
 		if (name === "") {
 			setToast("Please name yourself");
 		} else {
+			setToast("");
 			socket.emit("newRoom", { name });
 		}
 	};
@@ -49,6 +49,7 @@ export default function Start() {
 		if (name === "" || room === "") {
 			setToast("Please name yourself and provide a room number");
 		} else {
+			setToast("");
 			socket.emit("joinRequest", { name, room_id: room });
 		}
 	};
@@ -61,10 +62,20 @@ export default function Start() {
 					{toast !== "" && <div className="error">{toast}</div>}
 				</div>
 				<div className="choice">
-					<button onClick={() => history.push(`${path}/create`)}>
+					<button
+						onClick={() => {
+							history.push(`${path}/create`);
+							setToast("");
+						}}
+					>
 						Create new room
 					</button>
-					<button onClick={() => history.push(`${path}/join`)}>
+					<button
+						onClick={() => {
+							history.push(`${path}/join`);
+							setToast("");
+						}}
+					>
 						Join room
 					</button>
 				</div>

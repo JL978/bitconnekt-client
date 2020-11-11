@@ -23,7 +23,6 @@ body {
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	//background-color: $main-bg;
 }
 
 .root {
@@ -37,7 +36,20 @@ body {
 	flex-direction: column;
 
 	.toast {
-		height: 1rem;
+		height: 2.5rem;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+
+		.error {
+			width: 100%;
+			font-size: 1rem;
+			font-weight: 700;
+			color: white;
+			text-align: center;
+			padding: 10px;
+			background: crimson;
+		}
 	}
 	.choice {
 		display: grid;
@@ -48,14 +60,6 @@ body {
 			font-weight: 700;
 			background: none;
 			border: solid 1px black;
-			//color: $text-color;
-			//border-bottom: $main-bg solid 1px;
-			// &:first-child {
-			// 	border-right: $main-bg solid 1px;
-			// }
-			// &:last-child {
-			// 	border-left: $main-bg solid 1px;
-			// }
 			&:hover {
 				cursor: pointer;
 			}
@@ -91,8 +95,6 @@ body {
 				cursor: pointer;
 			}
 		}
-		// background: $primary-color;
-		// color: $text-color;
 	}
 }
 

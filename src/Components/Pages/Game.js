@@ -16,6 +16,7 @@ export default function Game() {
 	const [game, setGame] = useState(null);
 	const [self, setSelf] = useState(null);
 	const [winner, setWinner] = useState(null);
+	//const [error, setError] = useState('')
 
 	const copyText = useRef(null);
 
@@ -65,6 +66,7 @@ export default function Game() {
 			socket.on("errorMessage", (message) => console.log(message));
 		}
 		return () => socket.disconnect();
+		// eslint-disable-next-line
 	}, []);
 
 	const gameStateUpdate = (game) => {
@@ -75,6 +77,7 @@ export default function Game() {
 
 	useEffect(() => {
 		updateSelf();
+		// eslint-disable-next-line
 	}, [players]);
 
 	const updateSelf = () => {
