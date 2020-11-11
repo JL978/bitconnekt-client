@@ -15,6 +15,7 @@ export default function Game() {
 	const [isMod, setIsMod] = useState(false);
 	const [game, setGame] = useState(null);
 	const [self, setSelf] = useState(null);
+	const [winner, setWinner] = useState(null);
 
 	const copyText = useRef(null);
 
@@ -29,7 +30,6 @@ export default function Game() {
 				const [currentPlayer] = players.filter(
 					(player) => player._id === socket_id
 				);
-				console.log(currentPlayer);
 				if (currentPlayer._role === "Moderator") {
 					setIsMod(true);
 				}
@@ -41,15 +41,25 @@ export default function Game() {
 
 			socket.on("startGame", (game) => {
 				setIsWaiting(false);
-				const { _players } = game;
-				setPlayers(_players);
-				setGame(game);
+				gameStateUpdate(game);
 			});
 
 			socket.on("gameUpdate", (game) => {
-				const { _players } = game;
-				setPlayers(_players);
-				setGame(game);
+				gameStateUpdate(game);
+			});
+
+			socket.on("gameOver", ({ winner, game }) => {
+				gameStateUpdate(game);
+				setWinner(winner);
+			});
+
+			socket.on("restartGame", (game) => {
+				gameStateUpdate(game);
+			});
+
+			socket.on("playerLeft", ({ playerLeaving, players }) => {
+				setIsWaiting(true);
+				setPlayers(players);
 			});
 
 			socket.on("errorMessage", (message) => console.log(message));
@@ -57,14 +67,21 @@ export default function Game() {
 		return () => socket.disconnect();
 	}, []);
 
+	const gameStateUpdate = (game) => {
+		const { _players } = game;
+		setPlayers(_players);
+		setGame(game);
+	};
+
 	useEffect(() => {
 		updateSelf();
 	}, [players]);
 
 	const updateSelf = () => {
-		console.log(players);
 		const [currentPlayer] = players.filter((player) => player._id === socketId);
-		console.log(currentPlayer);
+		if (currentPlayer && currentPlayer._role === "Moderator") {
+			setIsMod(true);
+		}
 		setSelf(currentPlayer);
 	};
 
@@ -81,25 +98,38 @@ export default function Game() {
 		socket.emit("move", { room_id, move });
 	};
 
+	const onRestart = () => {
+		socket.emit("restart", { room_id });
+	};
+
 	return (
 		<>
 			{!(name && room_id) && <Redirect to="/" />}
 			<div className="gameRoom">
+				{/* title */}
 				{isWaiting ? (
 					<h1>Waiting for game to start...</h1>
 				) : (
 					<h1>BitConnekkkkt!</h1>
 				)}
+
+				{/* Mod starting button */}
 				{isMod && isWaiting && (
 					<button className="startButton" onClick={() => onStart()}>
 						Start game
 					</button>
 				)}
+
+				{/* Waiting room players indicator */}
 				{isWaiting && <h2>Available players:</h2>}
+
+				{/* List of players */}
 				<div className="players">
-					{players.map(({ _name, cards, _turn }, index) => (
+					{players.map(({ _name, cards, _turn, score }, index) => (
 						<div className={`player`} key={index}>
-							<p className={_turn && "turn"}>{_name}</p>
+							<p className={_turn && game && !game.is_over ? "turn" : null}>
+								{_name}
+							</p>
 							<div className="cards">
 								{cards.map((card, index) => (
 									<div className="card" key={index}>
@@ -107,10 +137,14 @@ export default function Game() {
 									</div>
 								))}
 							</div>
+							{game && game.is_over ? (
+								<div className="score">Score: {score}</div>
+							) : null}
 						</div>
 					))}
 				</div>
 
+				{/* Room id for users to copy if in waiting room */}
 				{isWaiting && (
 					<div className="copyText">
 						<h4>Room ID</h4>
@@ -118,22 +152,43 @@ export default function Game() {
 						<button onClick={() => onCopyText()}>Copy</button>
 					</div>
 				)}
-				{!isWaiting && game && self && (
-					<>
-						<div className="currentCard">
-							<h2>Current Card</h2>
-							<div className="card">{game.card_up}</div>
+
+				{/* Current game info */}
+				{!isWaiting &&
+					game &&
+					self &&
+					(game.is_over ? (
+						<div className="gameOver">
+							<div className="title">Game Over</div>
+							{winner ? (
+								<div className="winner">
+									Winner: {winner.map((player) => player._name)}
+								</div>
+							) : null}
+							{isMod ? (
+								<button onClick={() => onRestart()}>Restart</button>
+							) : null}
 						</div>
-						<div className="gameChoice">
-							<button disabled={!self._turn} onClick={() => onMove("TAKE")}>
-								Take
-							</button>
-							<button disabled={!self._turn} onClick={() => onMove("PASS")}>
-								Pass
-							</button>
-						</div>
-					</>
-				)}
+					) : (
+						<>
+							<div className="currentCard">
+								<h2>Current Card</h2>
+								<div className="card">{game.card_up}</div>
+								<div className="tokenPile">Token pile: {game.token_down}</div>
+							</div>
+							<div className="gameChoice">
+								<button disabled={!self._turn} onClick={() => onMove("TAKE")}>
+									Take
+								</button>
+								<button disabled={!self._turn} onClick={() => onMove("PASS")}>
+									Pass
+								</button>
+							</div>
+							<div className="tokens">
+								<p>Your tokens: {self.tokens}</p>
+							</div>
+						</>
+					))}
 			</div>
 		</>
 	);
